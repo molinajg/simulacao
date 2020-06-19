@@ -6,9 +6,11 @@ ExecProject was able to demonstrate the project execution product group accordin
 * Allows you to import projects in JSON format
 * Can be installed on dotProject +
 
-DotProject+ module version at: http://sistemaseinformacao.com.br/simulador/simulacao.zip
+Online evaluation available at: http://sistemaseinformacao.com.br/simulador/
 
-Simple html version at: http://sistemaseinformacao.com.br/simulador/ExecProject.zip
+DotProject+ module version at: https://github.com/molinajg/simulacao/releases/download/untagged-e388f491c94be116624d/simulacao.zip
+
+Simple html version at: https://github.com/molinajg/simulacao/releases/download/untagged-80f29b4d396fe52c9530/ExecProject.zip 
 
 Installation tutorial available at: http://sistemaseinformacao.com.br/simulador/simulador20200613.pdf
 
