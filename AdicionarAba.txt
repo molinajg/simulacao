@@ -1,0 +1,19 @@
+Para incorporar a aba de menu, juntamente com as abas do dotProject+
+
+- Fechar o dotProject+
+
+- Localizar o arquivo "\modules\proejcts\view.php", dentro do diretório de instalação do dotProject+
+
+- Localizar a sequência de linhas abaixo:
+  $tabBox->add(DP_BASE_DIR . "/modules/timeplanning/projects_tab.1initiation", $AppUI->_("1initiation", UI_OUTPUT_HTML));
+            
+  $tabBox->add(DP_BASE_DIR . "/modules/timeplanning/projects_tab.2integratedmodules", $AppUI->_("Planning and monitoring", UI_OUTPUT_HTML));
+            
+  $tabBox->add(DP_BASE_DIR . "/modules/dotproject_plus/projects_tab.execution", $AppUI->_("3execution", UI_OUTPUT_HTML));
+            
+  $tabBox->add(DP_BASE_DIR . "/modules/timeplanning/projects_tab.5closing", $AppUI->_("5closing", UI_OUTPUT_HTML));
+
+- Incluir uma nova linha após, com a seguinte informação:
+  $tabBox->add(DP_BASE_DIR . "/modules/simulacao/index", $AppUI->_("Simulador de Execução", UI_OUTPUT_HTML));
+
+- Pode abrir o dotProject+ e utilizar o simulador...

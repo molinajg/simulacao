@@ -1,0 +1,1200 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE"/>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <title>ExecProject - Simulador de Execução de Projetos</title>
+
+  <link rel=stylesheet href="platform.css" type="text/css">
+  <link rel=stylesheet href="libs/jquery/dateField/jquery.dateField.css" type="text/css">
+
+  <link rel=stylesheet href="gantt.css" type="text/css">
+  <link rel=stylesheet href="ganttPrint.css" type="text/css" media="print">
+  <link rel=stylesheet href="libs/jquery/valueSlider/mb.slider.css" type="text/css" media="print">
+
+  <script src="libs/jquery/jquery.min.js"></script>
+  <script src="libs/jquery/jquery-ui.min.js"></script>
+
+  <script src="libs/jquery/jquery.livequery.1.1.1.min.js"></script>
+  <script src="libs/jquery/jquery.timers.js"></script>
+  <script src="libs/jquery/jquery.balloon.js"></script>
+
+  <script src="libs/utilities.js"></script>
+  <script src="libs/forms.js"></script>
+  <script src="libs/date.js"></script>
+  <script src="libs/dialogs.js"></script>
+  <script src="libs/layout.js"></script>
+  <script src="libs/i18nJs.js"></script>
+  <script src="libs/jquery/dateField/jquery.dateField.js"></script>
+  <script src="libs/jquery/JST/jquery.JST.js"></script>
+  <script src="libs/jquery/valueSlider/jquery.mb.slider.js"></script>
+
+  <script type="text/javascript" src="libs/jquery/svg/jquery.svg.min.js"></script>
+  <script type="text/javascript" src="libs/jquery/svg/jquery.svgdom.1.8.js"></script>
+
+  <script src="ganttUtilities.js"></script>
+  <script src="ganttTask.js"></script>
+  <script src="ganttDrawerSVG.js"></script>
+  <script src="ganttZoom.js"></script>
+  <script src="ganttGridEditor.js"></script>
+  <script src="ganttMaster.js"></script>  
+
+  </head>
+<body style="background-color: #fff;">
+<div id="workSpace" style="padding:0px; overflow-y:auto; overflow-x:hidden;border:1px solid #e5e5e5;position:relative;margin:0 5px"></div>
+
+<style>
+  .resEdit {
+    padding: 15px;
+  }
+  
+  .resLine {
+    width: 95%;
+    padding: 3px;
+    margin: 5px;
+    border: 1px solid #d0d0d0;
+  }
+
+  body {
+    overflow: hidden;
+  }
+
+  .ganttButtonBar h1{
+    color: #000000;
+    font-weight: bold;
+    font-size: 28px;
+    margin-left: 10px;
+  }
+
+</style>
+
+<script type="text/javascript">
+
+var ge;
+var rel=[];
+var interferencias=[];
+var statusSimulacao = true; // estado inicial
+var finalizada = false;
+var msgSimulacao = "Simulação não foi iniciada...";
+var msgSimulacaoCor ="";
+var avisoInterf = false; 
+
+$(function() {
+  var canWrite=true; //this is the default for test purposes
+
+  // here starts gantt initialization
+  ge = new GanttMaster();
+  ge.set100OnClose=true;
+
+  ge.shrinkParent=true;
+
+  ge.init($("#workSpace"));
+  loadI18n(); //overwrite with localized ones
+
+  //in order to force compute the best-fitting zoom level
+  delete ge.gantt.zoom;
+
+   var project=loadFromLocalStorage(); 
+
+  if (!project.canWrite)
+    $(".ganttButtonBar button.requireWrite").attr("disabled","true");
+
+  ge.loadProject(project);
+  reiniciarProgressos();
+  rel = relatorioProgressos(); // criar o relatório de execução
+  interferencias = listaInterferencias(); // criar o relatório de execução
+  gerarInterferenciasNasAtividades();
+  ge.checkpoint(); //empty the undo stack
+});
+
+
+function getDemoProject(){
+  // JSON inserido manualmente através da rotina que extraiu os dados do dotProject(php)
+  projetoModelo = 
+	{ 
+	"tasks": [ 
+		 { "id": 0, "name": "Prazo total do Projeto", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "", "level": 0, "status": "STATUS_UNDEFINED", "depends": "", "start": 1488682800000, "duration": 97, "end": 1496977200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": false, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [], "hasChild": true }, 
+		 { "id": 66, "name": "Elaborar plano do projeto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "66", "level": 0, "status": "STATUS_ACTIVE", "depends": "", "start": 1488682800000, "duration": 6, "end": 1489201200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "365", "roleId": "tmp_5", "resourceId": "tmp_1", "effort": 0 }, { "id": "364", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 } ], "hasChild": false }, { "id": 67, "name": "Aprovar plano do projeto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "67", "level": 0, "status": "STATUS_ACTIVE", "depends": "2", "start": 1489201200000, "duration": 1, "end": 1489201200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "324", "roleId": "tmp_1", "resourceId": "tmp_4", "effort": 0 } ], "hasChild": false }, { "id": 69, "name": "Realizar as contrata\u00e7\u00f5es para o projeto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "69", "level": 0, "status": "STATUS_ACTIVE", "depends": "3", "start": 1489287600000, "duration": 1, "end": 1489374000000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "369", "roleId": "tmp_4", "resourceId": "tmp_2", "effort": 0 } ], "hasChild": false }, { "id": 83, "name": "Realizar levantamento dos requisitos (entrevista com stakeholders).", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "83", "level": 0, "status": "STATUS_ACTIVE", "depends": "3", "start": 1489287600000, "duration": 3, "end": 1489546800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "401", "roleId": "tmp_7", "resourceId": "tmp_5", "effort": 0 } ], "hasChild": false }, { "id": 149, "name": "Analisar e documentar os requisitos coletados", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "149", "level": 0, "status": "STATUS_ACTIVE", "depends": "5", "start": 1489633200000, "duration": 1, "end": 1489719600000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "402", "roleId": "tmp_7", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 82, "name": "Validar requisitos com apoio de prot\u00f3tipos.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "82", "level": 0, "status": "STATUS_ACTIVE", "depends": "6", "start": 1489719600000, "duration": 1, "end": 1489719600000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "400", "roleId": "tmp_7", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 84, "name": "Documentar a arquitetura e o fluxo de dados do sistema.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "84", "level": 0, "status": "STATUS_ACTIVE", "depends": "7", "start": 1489806000000, "duration": 7, "end": 1490410800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "403", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 87, "name": "Programar funcionalidade de cadastro de clientes.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "87", "level": 0, "status": "STATUS_ACTIVE", "depends": "8", "start": 1490410800000, "duration": 5, "end": 1490842800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "404", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 88, "name": "Realizar teste de unidade sobre o cadastro de clientes.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "88", "level": 0, "status": "STATUS_ACTIVE", "depends": "9", "start": 1490842800000, "duration": 11, "end": 1491793200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "405", "roleId": "tmp_2", "resourceId": "tmp_2", "effort": 0 } ], "hasChild": false }, { "id": 71, "name": "Realizar reuni\u00e3o de acompanhamento (primeiro bimestre).", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "71", "level": 0, "status": "STATUS_ACTIVE", "depends": "", "start": 1491706800000, "duration": 1, "end": 1491793200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "385", "roleId": "tmp_4", "resourceId": "tmp_2", "effort": 0 }, { "id": "383", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 }, { "id": "386", "roleId": "tmp_6", "resourceId": "tmp_5", "effort": 0 }, { "id": "384", "roleId": "tmp_7", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 89, "name": "Programar funcionalidade de cadastro de pedidos.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "89", "level": 0, "status": "STATUS_ACTIVE", "depends": "10", "start": 1491793200000, "duration": 10, "end": 1492657200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "407", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 90, "name": "Realizar testes de unidade sobre o cadastro de pedidos.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "90", "level": 0, "status": "STATUS_ACTIVE", "depends": "12", "start": 1492657200000, "duration": 10, "end": 1493521200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "406", "roleId": "tmp_2", "resourceId": "tmp_2", "effort": 0 } ], "hasChild": false }, { "id": 93, "name": "Programar telas de cadastro de clientes e pedidos.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "93", "level": 0, "status": "STATUS_ACTIVE", "depends": "13", "start": 1493607600000, "duration": 14, "end": 1494817200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "411", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 72, "name": "Realizar reuni\u00e3o de acompanhamento (segundo bimestre).", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "72", "level": 0, "status": "STATUS_ACTIVE", "depends": "", "start": 1494385200000, "duration": 1, "end": 1494471600000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "389", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 }, { "id": "387", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 }, { "id": "388", "roleId": "tmp_7", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 94, "name": "Realizar teste de sistema sobre o cadastro de clientes e cadastro de pedidos.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "94", "level": 0, "status": "STATUS_ACTIVE", "depends": "14", "start": 1494817200000, "duration": 5, "end": 1495249200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "410", "roleId": "tmp_2", "resourceId": "tmp_2", "effort": 0 } ], "hasChild": false }, { "id": 95, "name": "Programar tela web de listagem de pedidos em aberto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "95", "level": 0, "status": "STATUS_ACTIVE", "depends": "16", "start": 1495249200000, "duration": 3, "end": 1495508400000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "412", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 148, "name": "Participar do treinamento em programa\u00e7\u00e3o mobile", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "148", "level": 0, "status": "STATUS_ACTIVE", "depends": "", "start": 1495422000000, "duration": 1, "end": 1495422000000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "373", "roleId": "tmp_1", "resourceId": "tmp_1", "effort": 0 }, { "id": "375", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 }, { "id": "374", "roleId": "tmp_7", "resourceId": "tmp_5", "effort": 0 } ], "hasChild": false }, { "id": 146, "name": "Realizar teste de usabilidade do m\u00f3dulo web", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "146", "level": 0, "status": "STATUS_ACTIVE", "depends": "16", "start": 1495422000000, "duration": 2, "end": 1495594800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "367", "roleId": "tmp_2", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 96, "name": "Realizar teste de sistema sobre os pedidos em aberto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "96", "level": 0, "status": "STATUS_ACTIVE", "depends": "17", "start": 1495508400000, "duration": 2, "end": 1495681200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "413", "roleId": "tmp_2", "resourceId": "tmp_2", "effort": 0 } ], "hasChild": false }, { "id": 97, "name": "Integrar fun\u00e7\u00e3o de consulta de pedidos na tela para mobile.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "97", "level": 0, "status": "STATUS_ACTIVE", "depends": "20,18", "start": 1495681200000, "duration": 1, "end": 1495681200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "414", "roleId": "tmp_7", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 98, "name": "Realizar teste de sistema sobre a consulta de pedidos em mobile.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "98", "level": 0, "status": "STATUS_ACTIVE", "depends": "21", "start": 1495767600000, "duration": 1, "end": 1495854000000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "416", "roleId": "tmp_2", "resourceId": "tmp_2", "effort": 0 }, { "id": "415", "roleId": "tmp_7", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 147, "name": "Realizar teste de usabilidade do m\u00f3dulo para dispositivo m\u00f3vel", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "147", "level": 0, "status": "STATUS_ACTIVE", "depends": "22", "start": 1495854000000, "duration": 2, "end": 1496026800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "376", "roleId": "tmp_2", "resourceId": "tmp_1", "effort": 0 } ], "hasChild": false }, { "id": 77, "name": "Inspecionar qualidade do produto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "77", "level": 0, "status": "STATUS_ACTIVE", "depends": "22", "start": 1495854000000, "duration": 2, "end": 1496026800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "393", "roleId": "tmp_4", "resourceId": "tmp_2", "effort": 0 } ], "hasChild": false }, { "id": 104, "name": "Coletar os dispositivos dos entregadores.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "104", "level": 0, "status": "STATUS_ACTIVE", "depends": "23", "start": 1496026800000, "duration": 1, "end": 1496026800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "417", "roleId": "tmp_6", "resourceId": "tmp_5", "effort": 0 } ], "hasChild": false }, { "id": 100, "name": "Preparar o material para ministrar o treinamento.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "100", "level": 0, "status": "STATUS_ACTIVE", "depends": "24", "start": 1496026800000, "duration": 2, "end": 1496199600000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "420", "roleId": "tmp_3", "resourceId": "tmp_3", "effort": 0 } ], "hasChild": false }, { "id": 105, "name": "Instalar apps nos dispositivos.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "105", "level": 0, "status": "STATUS_ACTIVE", "depends": "25", "start": 1496113200000, "duration": 1, "end": 1496113200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "418", "roleId": "tmp_2", "resourceId": "tmp_2", "effort": 0 }, { "id": "419", "roleId": "tmp_7", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 101, "name": "Realizar o treinamento.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "101", "level": 0, "status": "STATUS_ACTIVE", "depends": "26,27", "start": 1496286000000, "duration": 3, "end": 1496545200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "377", "roleId": "tmp_4", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 78, "name": "Obter aceite formal do cliente.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "78", "level": 0, "status": "STATUS_ACTIVE", "depends": "28", "start": 1496631600000, "duration": 1, "end": 1496631600000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "394", "roleId": "tmp_6", "resourceId": "tmp_5", "effort": 0 } ], "hasChild": false }, { "id": 143, "name": "Encerrar formalmente os contratos do projeto.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "143", "level": 0, "status": "STATUS_ACTIVE", "depends": "29", "start": 1496718000000, "duration": 1, "end": 1496718000000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "395", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 } ], "hasChild": false }, { "id": 142, "name": "Realizar reuni\u00e3o de post mortem.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "142", "level": 0, "status": "STATUS_ACTIVE", "depends": "30", "start": 1496890800000, "duration": 1, "end": 1496890800000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "397", "roleId": "tmp_4", "resourceId": "tmp_2", "effort": 0 }, { "id": "396", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 }, { "id": "399", "roleId": "tmp_7", "resourceId": "tmp_5", "effort": 0 }, { "id": "398", "roleId": "tmp_4", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, { "id": 79, "name": "Discutir e registrar as li\u00e7\u00f5es aprendidas.", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "79", "level": 0, "status": "STATUS_ACTIVE", "depends": "31", "start": 1496977200000, "duration": 1, "end": 1496977200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "379", "roleId": "tmp_7", "resourceId": "tmp_1", "effort": 0 }, { "id": "382", "roleId": "tmp_4", "resourceId": "tmp_2", "effort": 0 }, { "id": "378", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 }, { "id": "380", "roleId": "tmp_7", "resourceId": "tmp_5", "effort": 0 }, { "id": "381", "roleId": "tmp_1", "resourceId": "tmp_6", "effort": 0 } ], "hasChild": false }, 
+         { "id": 73, "name": "Realizar reuni\u00e3o de acompanhamento (terceiro bimestre).", "progress": 0, "progressByWorklog": false, "relevance": 0, "type": "", "typeId": "", "description": "", "code": "73", "level": 0, "status": "STATUS_ACTIVE", "depends": "31", "start": 1496977200000, "duration": 1, "end": 1496977200000, "startIsMilestone": false, "endIsMilestone": false, "collapsed": false, "canWrite": true, "canAdd": true, "canDelete": true, "canAddIssue": true, "assigs": [ { "id": "391", "roleId": "tmp_4", "resourceId": "tmp_2", "effort": 0 }, { "id": "390", "roleId": "tmp_5", "resourceId": "tmp_4", "effort": 0 }, { "id": "392", "roleId": "tmp_7", "resourceId": "tmp_5", "effort": 0 } ], "hasChild": false }], 
+	"selectedRow": 0, "deletedTaskIds": [], 
+	"resources": [ 
+		{ "id": "tmp_1", "name": "Bob Esponja", "performance": 1.9 }, 
+		{ "id": "tmp_2", "name": "Gary Caracol", "performance": 1.9 }, 
+		{ "id": "tmp_3", "name": "Karen Plankton", "performance": 1.9 }, 
+		{ "id": "tmp_4", "name": "Lula Molusco", "performance": 1.9 }, 
+		{ "id": "tmp_5", "name": "Patrick Estrela", "performance": 1.9 }, 
+		{ "id": "tmp_6", "name": "Sr. Siriguejo", "performance": 1.9 } ], 
+	"roles": [ 
+		{ "id": "tmp_1", "name": "Analista de sistemas" }, 
+		{ "id": "tmp_2", "name": "Analista de teste" }, 
+		{ "id": "tmp_3", "name": "Auditor externo" }, 
+		{ "id": "tmp_4", "name": "Gerente da qualidade" }, 
+		{ "id": "tmp_5", "name": "Gerente de projetos" }, 
+		{ "id": "tmp_6", "name": "Instrutor" }, 
+		{ "id": "tmp_7", "name": "Programador" } ], 
+	"canWrite": false, 
+	"canWriteOnParent": false, 
+	"zoom": "1Q", 
+	"canDelete": false, 
+	"canAdd": false ,
+	"progressLine" : 1488682800000 
+	}
+  return projetoModelo;
+}
+
+function relatorioProgressos(){
+	// Exemplo de JSON que serve como resumo da execução de cada atividade
+	//{"id":0, "idtask":"", "realStart":0, "realEnd":0, "programmedStart":0, "programmedEnd":0, "realDuration":0, "programmedDuration":0, "finalizada":false, "status":"", "desempenho":""} 
+	var newRel=[];
+	for (var i=0;i<ge.tasks.length;i++){
+	  var res = {"id":0, "idtask":"", "name":"",  "realStart":0, "realEnd":0, "realDuration":0, 
+	             "programmedStart":0, "programmedEnd":0, "programmedDuration":0, 
+				 "finalizada":false, "status":"Não inicilizada.", "desempenho":"",
+				 "interferencia": false, "interfPositiva": false, "interfMsg":"", "interfGrau":0
+				 } ;
+	  var task = ge.tasks[i];
+	  if (task){
+		  res.id = newRel.length +1; // verificar se será utilizado 
+		  res.idtask=task.id;
+		  res.name=task.name;
+		  res.realStart=0;
+		  res.realEnd=0;
+		  res.realDuration=0; 
+		  res.programmedStart=task.start;
+		  res.programmedEnd=task.end;
+		  res.programmedDuration=task.duration;
+		  res.status='Não iniciada.';
+		  res.interferencia=false;
+		  res.interfPositiva=false;
+		  res.interfMsg='';
+		  res.interfGrau='';
+		  res.desempenho='';
+		}
+		newRel.push(res);
+	  }
+	return newRel;
+}
+
+function listaInterferencias(){
+	var interfs = 
+	      [{"id":1, "positiva":true, "fator":5.5, "descricao":"Uma festa de confraternização da empresa no final de semana ajudou a promover a interação de algum membros da equipe."},
+		   {"id":2, "positiva":false, "fator":0.5, "descricao":"O entusiasmo da equipe está baixo e a produtividade caiu."},
+		   {"id":3, "positiva":true, "fator":3.2, "descricao":"Um treinamento oferecido para alguns membros da equipe está resultando no aumento da produtividade."},
+		   {"id":4, "positiva":false, "fator":0.3, "descricao":"Uma pandemia fez com que o patrocinador do projeto cortasse uma parte do orçamento destinado ao projeto, e assim, o salários dos membros da equipe precisaram ser reduzidos."},
+		   {"id":5, "positiva":true, "fator":4.2, "descricao":"Uma das viagens de negócio dos donos da empresa trouxe mais um investidor, o que acarretou em um bônus de produtividade para alguns membros da equipe."},
+		   {"id":6, "positiva":false, "fator":0.8, "descricao":"Um famoso Youtuber avaliou negativamente a ideia do produto sendo desenvolvido e desmotivou alguns membros da equipe."},
+		   {"id":7, "positiva":false, "fator":0.7, "descricao":"Uma pandemia forçou toda a equipe a trabalhar em home office o que impactou na produtividade de alguns membros da equipe."},
+		   {"id":8, "positiva":false, "fator":0.9, "descricao":"Uma greve no transporte público fez com que alguns membros da equipe chegassem atrasados por uma semana."},
+		   {"id":9, "positiva":false, "fator":0.3, "descricao":"O Gerente de Projetos criticou um membro da equipe para o cliente e causou desmotivação."},
+		  {"id":10, "positiva":true, "fator":3.9, "descricao":"O Gerente de Projetos elogiou o empenho de todos em reunião com os membros da equipe."}];
+   return interfs;
+}
+
+function gerarInterferenciasNasAtividades(){
+	var qtd = Math.trunc(rel.length / 8); // 8 = intevalo de atividades sem inteferência
+	var min=1; 
+	var max=8;  
+	for (i=1; i<=qtd; i++){
+		// busca qual interferencia será utilizada
+		var x = sortearInterferencia(interferencias); // sortea uma inteferencia das disponiveis
+		var newLista=[];
+		var interferenciaSorteada = interferencias[x];
+		for (j=0; j<interferencias.length; j++){ // remove a sorteada da lista
+			if (j!=x){
+				var registro = interferencias[j];
+				newLista.push(registro);
+			}
+		} 
+		interferencias = newLista;
+		// random entre dois números
+		var random = Math.floor(Math.random() * (max - min)) +min; 	
+		rel[random].interferencia = true;
+		rel[random].interfGrau    = interferenciaSorteada.fator;
+		rel[random].interfMsg	= interferenciaSorteada.descricao;
+		rel[random].interfPositiva = interferenciaSorteada.positiva;
+		min = min+8;
+		max = max+8;
+	}
+
+}
+
+function sortearInterferencia(lista){
+	var min=0; 
+	var max=lista.length -1;
+	var sorteado = Math.floor(Math.random() * (max - min)) +min;
+	return sorteado;
+}
+
+function progredirUmaVez(){
+	var alteracoes = 0;
+	var dtStartOK = false;
+	var realizarAtividade = false;
+	
+	// NÃO ESTÁ CONSIDERANDO A ATIVIDADE 1 QUE É O PROGRESSO TOTAL
+	for (var i=1;i<ge.tasks.length;i++){ 
+	
+		// verifica se a data prevista para início já chegou
+		dtStartOK = false;
+		if (ge.tasks[i].start <= ge.progressLine){
+			dtStartOK = true;
+		}
+		// verifica e realiza progresso atividade
+		if (ge.tasks[i].progress < 100){
+			// verifica se atividade já tem suas atividades predecessoras concluídas ou se a data marcada chegou quando naõ tem predecessora
+			if (dtStartOK && ge.tasks[i].depends ==''){
+				realizarAtividade = true;
+			}else 
+			if(ge.tasks[i].depends !='' && dependenciasFinalizadas(ge.tasks[i].depends)){
+				realizarAtividade = true;
+			}else 
+				realizarAtividade = false;
+			// realiza simulação do progresso da atividade
+			if (realizarAtividade){ 
+				ge.tasks[i].progress = parseFloat(incrementaProgressoAtividade(i)).toFixed(2);
+				if (ge.tasks[i].progress == 100){
+					ge.tasks[i].status = "STATUS_DONE";
+				}
+				var taskStart = ge.tasks[i].start;
+				var taskEnd   = ge.tasks[i].end;
+				var taskProgr = ge.tasks[i].progress;
+				// Relatório, registra inicio-----------------------------------------
+				if (rel[i].realStart==0){
+					rel[i].realStart = computeStart(ge.progressLine); //ge.progressLine;
+					if (computeEnd(ge.progressLine) <= computeStartDate(taskStart)){
+						rel[i].status='Iniciada no prazo.'; // descriçao se terminou no prazo etc...
+					}else{
+						rel[i].status='Iniciada em atrazo.';
+					}
+				}
+				// Verificações ao finalizar atividade --------------------------------
+				if (taskProgr == 100 ){ // rel[i].realEnd == 0 && 
+					rel[i].realEnd = computeEnd(ge.progressLine);
+					rel[i].realDuration = recomputeDuration(computeStart(rel[i].realStart), computeEnd(rel[i].realEnd)); // calcular diferença entre realStart e realEnd 
+					rel[i].realDuration = (rel[i].realDuration==0?1:rel[i].realDuration);
+					rel[i].finalizada=true;
+					rel[i].desempenho=gerarDesempenho(i);
+					if (computeEnd(ge.progressLine) <= computeStartDate(taskEnd)){
+						rel[i].status='Finalizada no prazo.'; // descriçao se terminou no prazo etc...
+					}else{
+						rel[i].status='Finalizada em atrazo.';
+					}
+				}				
+				//----------------------------------------------------------------------				
+				ge.taskIsChanged();
+				alteracoes++;
+				//-----pausa o simulador e mostra a tela de aviso da interferencia------
+				if (avisoInterf){
+					var msgAdvertencia = rel[i].interfMsg +" [Refletiu em <b>"+(rel[i].interfPositiva?"aumento":"redução")+"</b> de desempenho da atvidade \"<i>"+ge.tasks[i].name+"</i>\"]";
+					notificacaocaoAlerdaModal(msgAdvertencia, rel[i].interfPositiva);
+					avisoInterf = false; 
+					controlarSimulacao(); // PAUSA na simulação e mostra alerta
+					return alteracoes;
+					break;
+				}
+				//----------------------------------------------------------------------
+			}
+		}
+	}
+	// Linha do progresso de tempo transcorrido ----------------------------------------
+	var proximoDia  =  incrementDateByWorkingDays(computeStartDate(ge.progressLine),1); // datanumerica
+	ge.progressLine = proximoDia;
+	ge.alteraProgressLine(proximoDia); // atualiza o dia visualmente no componente
+	if (alteracoes==0){
+		ge.taskIsChanged(); // quando não incrementa nenhuma tem que mandar o aplicativo renderizar novamente.
+	}
+	return alteracoes;
+}
+
+function gerarDesempenho(indice){
+	// utilizada para relatório de RESUMO da atividade
+	// Iniciou atrasada x dias, 
+	// Iniciou antecipada x dias, 
+	// durou x dias a mais,
+	// durou x dias a menos,
+	// finalizada x dias atrasada.
+	// finalizada x dias antes.
+
+	var resul = rel[indice];
+	var iniProgramado = resul.programmedStart;
+	var iniProgramado = computeStart(iniProgramado);
+	var iniReal = resul.realStart;
+	var iniReal = computeStart(iniReal);	
+
+	var desemp = "";
+	// verifica o inicio
+	if (iniProgramado == iniReal){
+		desemp = "Iniciou na data planejada. ";
+	}else
+	if (iniReal < iniProgramado){
+		var dias = recomputeDuration(iniReal, iniProgramado);
+		desemp = "Iniciou "+(dias<2?"1 dia":dias+" dias")+" antecipada. ";
+	}else{
+		var dias = recomputeDuration(iniProgramado, iniReal);
+		desemp = "Iniciou "+(dias<2?"1 dia":dias+" dias")+" atrasada. ";
+	}
+
+	// verifica a duração
+	var diasduracao = (resul.realDuration==1?"1 dia":resul.realDuration+" dias");
+	if (resul.programmedDuration == resul.realDuration){
+		desemp = desemp +  "Realizada em "+diasduracao+", conforme planejado.";
+	}else
+	if (resul.programmedDuration > resul.realDuration){
+		desemp = desemp + "Realizada em "+diasduracao+", "+(parseInt(resul.programmedDuration) - parseInt(resul.realDuration))+" dias a menos que o planejado.";
+	}else{
+		desemp = desemp + "Realizada em "+diasduracao+", "+(parseInt(resul.realDuration) - parseInt(resul.programmedDuration))+" dias a mais que o planejado.";
+	}
+	return desemp;
+}
+
+async function ExecutarSimulacao(){
+	statusSimulacao = false;
+	if (finalizada){
+		reiniciarSimulacao();
+		finalizada = false;
+	}
+	// --------------------------------------
+	while (!finalizada && !statusSimulacao){
+	    var tmp = document.getElementById("btvelocidade").value
+		await wait(550/tmp); 
+		//await wait(55); // 55 minimo fica ok
+		progredirUmaVez();
+		if (! existeTaskIncompleta() || ge.progressLine > ge.tasks[0].end){
+			//x = 999999999;
+			finalizada = true;
+			controlarSimulacao(); // retorno botão no status de Simular
+			if (computeEnd(ge.progressLine) <= computeStartDate(ge.tasks[0].end)){
+				// alert("Projeto foi concluído com sucesso dentro do prazo!");
+				if (! existeTaskIncompleta()){
+					var fimReal = computeEnd(ge.progressLine);
+					var fimProg = computeEnd(ge.tasks[0].end);
+					var antecipado = recomputeDuration(fimReal, fimProg);
+					var dias = (antecipado==1?"1 dia":antecipado+" dias");
+					msgSimulacao = "Projeto foi concluído com sucesso "+dias+" antes do prazo!";
+					msgSimulacaoCor = "avisoH3verde";
+				}else{
+					msgSimulacao = "Projeto foi cancelado porque esgotou o prazo!";
+					msgSimulacaoCor = "avisoH3vermelho";
+				}
+				showRelatorio();
+			}
+			if (computeEnd(ge.progressLine) > computeEnd(ge.tasks[0].end)){
+				//alert("Projeto extrapolou o prazo previsto!");
+				msgSimulacao = "Projeto extrapolou o prazo previsto!";
+				msgSimulacaoCor = "avisoH3vermelho";
+				showRelatorio();
+			}
+		}
+	}
+}
+
+function wait(time) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve();
+        }, time);
+    });
+}
+
+function reiniciarSimulacao(newProject){
+	avisoInterf = false; 
+	var project
+	if (newProject == null){
+		project = loadFromLocalStorage(); 
+	}else {project = newProject}
+	ge.loadProject(project);
+	reiniciarProgressos();
+	rel = relatorioProgressos(); // criar o relatório de execução
+	interferencias = listaInterferencias(); // criar o relatório de execução
+	gerarInterferenciasNasAtividades();
+	ge.checkpoint(); 
+}
+
+function reiniciarProgressos(){
+	if(ge){
+		for (var i=0;i<ge.tasks.length;i++){ // LIMPA O PROGRESSO
+			ge.tasks[i].progress = 0;
+			ge.tasks[i].status='STATUS_ACTIVE';
+		}
+		ge.tasks[0].status='STATUS_UNDEFINED'; // primeira atvidade é a visualização de todo o prazo
+		ge.progressLine =  ge.tasks[0].start; // barra de progresso no início
+		ge.alteraProgressLine(ge.tasks[0].start); // atualiza o componente para mostrar visualmente
+		ge.taskIsChanged();
+	}
+}
+
+function controlarSimulacao(){
+  var playButton = document.querySelector('#btcontrolar');
+  if(statusSimulacao){
+       statusSimulacao = false;
+	   playButton.innerHTML = "<span class='teamworkIcon'>s</span> Pausar"; //"Pausar";
+	   ExecutarSimulacao();
+  } else {
+       statusSimulacao = true;
+	   playButton.innerHTML = "<span class='teamworkIcon'>a</span> Simular"; //"Continuar";
+  }
+}
+
+function dependenciasFinalizadas(listaDependencia){
+	// se não possui dependencia segue
+	if (listaDependencia == ""){
+		return true;
+	} else{
+		var dep =[];
+		dep = listaDependencia.split(",");
+		for (var i=0;i<dep.length;i++){
+			//console.debug(Number(dep[i]));
+			var tasktemp = ge.tasks[Number(dep[i])-1];
+			// console.debug(tasktemp.status);
+			if (tasktemp.status!="STATUS_DONE"){
+				return false;
+			}
+		}
+		return true;
+	}
+	// var listaDependencia
+	/*
+	// status disponíveis para atvidade
+	"STATUS_ACTIVE"
+	"STATUS_WAITING"
+	"STATUS_SUSPENDED"
+	"STATUS_DONE"
+	"STATUS_FAILED"
+	"STATUS_UNDEFINED"
+	*/
+}
+
+
+function existeTaskIncompleta(){
+	for (var i=1;i<ge.tasks.length;i++){// atividade inicial é a visualização do progresso total
+	  if (ge.tasks[i].progress < 100){
+		return true;
+		break;
+	  }
+	}
+	return false;
+}
+
+function incrementaProgressoAtividade(indiceTask){
+	// esta função considera a performance dos recursos da atvidade
+	// progresso total do projeto está incrementando muito demorado
+	// o progresso total tem o "delay" relacionado aos dias não trabalhados pelas atividades
+	// o progresso total é sequencial, enquanto atividades possuem incremento paralelo
+	// criar loop conforme dias sequenciais de todo projeto, incrementar atividade zero quando não existir nenhuma outa atividade naquela data
+	
+	// console.log(desemp);
+	var atual  = parseFloat(ge.tasks[indiceTask].progress);
+	var falta  = parseFloat(100 - atual);
+	var turnos = parseFloat(ge.tasks[indiceTask].duration*2); // considera incrementar a cada loop, meio dia +ou- 4hs trabalho
+	var grau   = parseFloat(100 / turnos);  // divide o progresso total pela quantidade de "turnos horas"
+	var desmep = 1; // inicializar variável
+	// Interferencias -------
+	if (rel[indiceTask].interferencia){
+		if (ge.tasks[indiceTask].progress==0){
+			// notificacaocaoBalloon(rel[indiceTask].interfMsg, rel[indiceTask].interfPositiva);
+			// notificacaocaoAlerdaModal
+			avisoInterf = true;
+		}
+		desemp = rel[indiceTask].interfGrau; // atualiza o desempenho da equipe da atvidade
+	}else
+	{
+		desemp = parseFloat(calculaDesempenhoRecursos(indiceTask)); //fator baseado nos recursos
+	}
+	//-----------------------
+	grau = grau * desemp; // aplica o fator de desempenho
+	// grau = parseFloat(grau).toFixed(2); // duas casas decimais
+	if (falta <= 0){
+		return 100; // já completou
+	}else if (falta > grau) {
+		return parseFloat(atual) + parseFloat(grau); 
+	} else { 
+		return parseFloat(atual) + parseFloat(falta); 
+	}
+}
+
+function calculaDesempenhoRecursos(indiceTask){
+	var fator = 1; // default = normal
+	//var recAlocados[];
+	// "assigs":[{"id":"1587825618120_1","resourceId":"tmp_4","roleId":"tmp_1","effort":0}]
+	// "resources": [{"id": "tmp_1", "name": "Resource 1", "performance":0.5}]
+	var qtd = ge.tasks[indiceTask].assigs.length;
+	if (qtd>0){
+		fator = parseFloat(0);
+		for (var i=0; i<ge.tasks[indiceTask].assigs.length; i++){
+			for (var j=0; j<ge.resources.length; j++){
+				if (ge.tasks[indiceTask].assigs[i].resourceId == ge.resources[j].id){
+					fator = parseFloat(fator) + parseFloat(ge.resources[j].performance);
+				}
+			}
+		}
+		fator = parseFloat(parseFloat(fator)/qtd); // média entre as performances dos recursos alocados
+	}
+	return parseFloat(fator);
+}
+
+function DATEDIFF(start, end) {
+    return Math.abs((end-start)/(1000*60*60*24));
+}
+
+//------------------------------------------- Relatório Resumo da Execução ------------------------------------------------------------------------------------------------------
+function showRelatorio(){
+  //make view relator
+  var viewRelator = $.JST.createFromTemplate({}, "RELATOR_VIEW");
+  var subTitulo =  viewRelator.find("#msgSimul");
+  subTitulo.html(msgSimulacao);
+  subTitulo.addClass(msgSimulacaoCor);
+  // subTitulo.css({"color": class="avisoH3"});
+  var relTbl=viewRelator.find("#resumeTable");
+
+  for (var i=1;i<rel.length;i++){
+    var res=rel[i];
+	var linha = $.JST.createFromTemplate(res, "RELATOR_ROW");
+	/* // alterar cor atividade conforme status
+	if (res.realEnd > 0){ // atividade finalizada
+		var color = ""+ (res.realEnd > res.programmedEnd?'red':'green');
+		linha.css({"color":color});
+	} */
+    relTbl.append(linha);
+  }
+
+  //bind save event
+  viewRelator.find("#relCloseButton").click(function(){
+	closeBlackPopup();
+  });
+
+  var ndo = createModalPopup(1000, 300).append(viewRelator);
+}
+
+//---- importar projeto externo ----------------
+function carregarArquivo(){
+	document.getElementById("inFile").click();
+}
+
+function importJson(obj){
+	if (FileReader){
+	
+		if (typeof window.FileReader !== 'function') {
+		  alert("Suporte de arquivo não é suportado por este navegador.");
+		  return;
+		}
+		
+		var input, file, fr;
+		input = document.getElementById('inFile');
+		if (!input) {
+		  alert("Não é possível encontrar o elemento 'iniFile'.");
+		}
+		else if (!input.files) {
+		  alert("Este navegador não suporta a propriedade files para entrada de arquivos.");
+		}
+		else if (!input.files[0]) {
+		  alert("Selecione um arquivo para importar.");
+		}
+		else if (input.files[0].type != 'application/json'){
+			alert('Arquivo com formato inválido:'+file.type);
+		}
+		else {
+			// carregar arquivo
+			file = input.files[0];
+			var reader = new FileReader();
+			reader.readAsDataURL(obj.files[0]);
+			reader.onload = function (e) {
+				console.log('Arquivo c/ formato: '+file.type);
+				var fr = new FileReader();
+			    fr.onload = function (e) {
+							var json = JSON.parse(e.target.result);
+
+							if (json.tasks != null){
+								reiniciarSimulacao(json);
+								saveInLocalStorage();
+							}
+							console.log(json);
+							};
+				fr.readAsText(file);
+				// console.log("arquivo:"+fr);
+				console.log("fileName:"+file.name);
+				console.log("fileType:"+file.type);
+				console.log("fileSize:"+file.size)
+			}
+		}
+	}
+	else
+	{
+		    // Not supported
+	}
+
+}
+
+function notificacaocaoAlerdaModal(conteudo, positiva){
+  //make view warnning modal
+  var alertaModal = $.JST.createFromTemplate({}, "ALERT_VIEW");
+  var textoOcorrencia =  alertaModal.find("#msgOcorrencia");
+  textoOcorrencia.html(conteudo);
+  var color = ""+ (positiva?'#00b300':'#ff0000');
+ // textoOcorrencia.css({"color": color});
+  //bind save event
+  alertaModal.find("#seguirSimulButton").click(function(){
+	controlarSimulacao(); // retomar a simulação
+	closeBlackPopup();
+  });
+
+  var ndo = createModalPopup2(700, 160).append(alertaModal);
+}
+
+//---- teste balloon / NÃO UTILIZDO ---
+function notificacaocaoBalloon(conteudo, positiva){
+	//console.log(conteudo+ " - " +positiva);
+    var gnt = $("body").find("#TWGanttArea"); // workSpace"); //
+    var taskzero = gnt.find("svg[taskid=66]");	
+	var color = (positiva?'#206020':'#ff0000');
+	$(gnt).showBalloon({
+	  tipSize: 15,
+	  offsetY: -100,
+	//  offsetX: -100,
+	// position : "bottom";
+	  css: {
+		border: 'solid 4px #5baec0',
+		padding: '2px',
+		fontSize: '100%',
+		fontWeight: 'bold',
+		lineHeight: '3',
+		backgroundColor: color,//'#666',
+		color: '#fff'
+	  },
+	  html: true,
+	  contents: conteudo, // "O Gerente de Projetos criticou um membro da equipe para o cliente e causou desmotivação.",
+	 // minLifetime: 3000,
+	  maxLifetime: 5000
+	});
+}
+
+//---- teste Alerta Modal / NÃO UTILIZADO -----------
+function testeAlertaModal(){
+	var lista= listaInterferencias();
+	for(i=0; i<lista.length; i++){
+		notificacaocaoAlerdaModal(lista[i].descricao);
+	}
+}
+
+//-------------------------------------------  Get project file as JSON (used for migrate project from gantt to Teamwork) ------------------------------------------------------
+
+function loadFromLocalStorage() {
+  var ret;
+  if (localStorage) {
+    if (localStorage.getObject("TWProjeto")) {
+      ret = localStorage.getObject("TWProjeto");
+    }
+  }
+  //if (!ret || !ret.tasks || ret.tasks.length == 0){
+  if (!ret){
+   ret=getDemoProject();
+  }
+  return ret;
+}
+
+//-------------------------------------------  Open a black popup for managing resources. This is only an axample of implementation (usually resources come from server) ------------------------------------------------------
+function editResources(){
+
+  //make resource editor
+  var resourceEditor = $.JST.createFromTemplate({}, "RESOURCE_EDITOR");
+  var resTbl=resourceEditor.find("#resourcesTable");
+
+  for (var i=0;i<ge.resources.length;i++){
+    var res=ge.resources[i];
+    resTbl.append($.JST.createFromTemplate(res, "RESOURCE_ROW"))
+  }
+  
+  //bind add resource
+  resourceEditor.find("#addResource").click(function(){
+    resTbl.append($.JST.createFromTemplate({id:"new", name:"nome do recurso", performance: 1}, "RESOURCE_ROW"))
+  });
+
+  //bind save event
+  resourceEditor.find("#resSaveButton").click(function(){
+    var newRes=[];
+    //find for deleted res
+    for (var i=0;i<ge.resources.length;i++){
+      var res=ge.resources[i];
+      var row = resourceEditor.find("[resId="+res.id+"]");
+      if (row.length>0){
+        //if still there save it
+        var name = row.find("input[name=name]").val();
+        if (name && name!=""){
+          res.name=name;
+		  // Performance
+		  row.first();
+		  var performance = parseFloat(row.find("select[name=performance]").val());
+		  if (performance == "")
+		  	performance = 1;
+		  res.performance=performance;
+		}
+        newRes.push(res);
+      } else {
+        //remove assignments
+        for (var j=0;j<ge.tasks.length;j++){
+          var task=ge.tasks[j];
+          var newAss=[];
+          for (var k=0;k<task.assigs.length;k++){
+            var ass=task.assigs[k];
+            if (ass.resourceId!=res.id)
+              newAss.push(ass);
+          }
+          task.assigs=newAss;
+        }
+      }
+    }
+
+    //loop on new rows
+    var cnt=0
+    resourceEditor.find("[resId=new]").each(function(){
+      cnt++;
+      var row = $(this);
+	  var performance = row.find("input[performance]").val();
+      var name = row.find("input[name=name]").val();
+      if (name && name!="")
+        newRes.push (new Resource("tmp_"+new Date().getTime()+"_"+cnt,name, performance));
+    });
+
+    ge.resources=newRes;
+
+    closeBlackPopup();
+    ge.redraw();
+	// =====================
+	saveInLocalStorage(); // salva recursos localmente
+  });
+
+  var ndo = createModalPopup(400, 500).append(resourceEditor);
+}
+
+function showBaselineInfo (event, element){
+  //alert(element.attr("data-label"));
+  $(element).showBalloon(event, $(element).attr("data-label"));
+  ge.splitter.secondBox.one("scroll",function(){
+    $(element).hideBalloon();
+  })
+}
+
+function saveInLocalStorage() {
+  var prj = ge.saveProject();
+  if (localStorage) {
+    localStorage.removeItem("TWProjeto"); // limpa 
+    localStorage.setObject("TWProjeto", prj);
+	if (rel){
+		localStorage.removeItem("TWrel"); // limpa 
+		localStorage.setObject("TWrel", rel);
+	}
+  }
+}
+</script>
+
+
+<div id="gantEditorTemplates" style="display:none;">
+
+<div class="__template__" type="GANTBUTTONS">
+  <div class="ganttButtonBar noprint">
+    <div class="buttons">
+		<button onclick="$('#workSpace').trigger('zoomMinus.gantt'); return false;" class="button textual icon " title="zoom out"><span class="teamworkIcon">)</span></button>
+		<button onclick="$('#workSpace').trigger('zoomPlus.gantt');return false;" class="button textual icon " title="zoom in"><span class="teamworkIcon">(</span></button>
+		<span class="ganttButtonSeparator"></span> 
+		<button onclick="ge.gantt.showCriticalPath=!ge.gantt.showCriticalPath; ge.redraw(); return false;" 
+	          class="button textual icon requireCanSeeCriticalPath" title="Caminho crítico"><span class="teamworkIcon">&pound;</span>
+		</button>
+		<span class="ganttButtonSeparator"></span> 
+		<button onclick="editResources();" class="button textual" title="Editar Recursos"><span class="teamworkIcon">M</span></button>
+		<span class="ganttButtonSeparator"></span>   
+		<button id="btcontrolar" onclick='controlarSimulacao();' class="button textual icon" title="Controle execução" ><span class='teamworkIcon'>a</span> Simular</button>
+
+		<span class="ganttButtonSeparator"></span> 
+		<label class="sliderlabel" > Velocidade da simulação: </label>
+		<div class="slidecontainer">
+			<!-- <label> Velocidade </label>-->
+			<input class="slider" id="btvelocidade" type="range" min="1" max="10" value="1" title="Velocidade">
+		</div>
+
+		<span class="ganttButtonSeparator"></span> 
+		<button onclick="showRelatorio();" class="button textual" title="Relatório de execução"><span class="teamworkIcon">c</span></button>
+		
+		<span class="ganttButtonSeparator"></span> 
+		<input type='file' id='inFile' accept='.json' onchange="importJson(this)" hidden>
+		<button  onclick='carregarArquivo();' class="button textual" title="Importar um projeto externo por arquivo JSON."><span class="teamworkIcon">k</span>Importar Projeto Externo</button>
+		
+		
+		<a href='./simulador20200613.pdf' onclick='' class="button textual icon buttonRight" title="Tutorial de uso" ><span class='teamworkIcon'>?</span> Tutorial</a>
+		<a href='./Avaliacao.html' class="button textual icon buttonRight newproject" title="Avaliação do simulador" ><span class='teamworkIcon'>W</span> Avaliação</a>
+	</div>
+  </div>
+</div>
+
+<div class="__template__" type="TASK_EDITOR">
+  <div class="ganttTaskEditor">
+    <h2 class="taskData">Editar Atividade</h2>
+    <table  cellspacing="1" cellpadding="5" width="100%" class="taskData table" border="0">
+	   <tr>
+		<td width="200" style="height: 80px"  valign="top">
+		  <label for="code">Código/Abreviatura</label><br>
+		  <input type="text" name="code" id="code" value="" size=15 class="formElements" autocomplete='off' maxlength=255 style='width:100%' oldvalue="1">
+		</td>
+		<td colspan="3" valign="top"><label for="name" class="required">Nome</label><br><input type="text" name="name" id="name"class="formElements" autocomplete='off' maxlength=255 style='width:100%' value="" required="true" oldvalue="1">
+		</td>
+	   </tr>
+      <tr class="dateRow">
+        <td nowrap="">
+          <div style="position:relative">
+            <label for="start">Início</label>&nbsp;&nbsp;&nbsp;&nbsp;
+            <!-- <input type="checkbox" id="startIsMilestone" name="startIsMilestone" value="yes"> &nbsp;<label for="startIsMilestone">é um marco</label>&nbsp; -->
+            <br><input type="text" name="start" id="start" size="8" class="formElements dateField validated date" autocomplete="off" maxlength="255" value="" oldvalue="1" entrytype="DATE">
+            <span title="calendar" id="starts_inputDate" class="teamworkIcon openCalendar" onclick="$(this).dateField({inputField:$(this).prevAll(':input:first'),isSearchField:false});">m</span>          </div>
+        </td>
+        <td nowrap="">
+          <label for="end">Término</label>&nbsp;&nbsp;&nbsp;&nbsp;
+          <!-- <input type="checkbox" id="endIsMilestone" name="endIsMilestone" value="yes"> &nbsp;<label for="endIsMilestone">é um marco</label>&nbsp; -->
+          <br><input type="text" name="end" id="end" size="8" class="formElements dateField validated date" autocomplete="off" maxlength="255" value="" oldvalue="1" entrytype="DATE">
+          <span title="calendar" id="ends_inputDate" class="teamworkIcon openCalendar" onclick="$(this).dateField({inputField:$(this).prevAll(':input:first'),isSearchField:false});">m</span>
+        </td>
+        <td nowrap="" >
+          <label for="duration" class=" ">Dias</label><br>
+          <input type="text" name="duration" id="duration" size="4" class="formElements validated durationdays" title="Duration is in working days." autocomplete="off" maxlength="255" value="" oldvalue="1" entrytype="DURATIONDAYS">&nbsp;
+        </td>
+      </tr>
+      <tr>
+        <td  colspan="2">
+          <label for="status" class=" ">Status</label><br>
+          <select id="status" name="status" class="taskStatus" status="(#=obj.status#)"  onchange="$(this).attr('STATUS',$(this).val());" disabled>
+            <option value="STATUS_ACTIVE" class="taskStatus" status="STATUS_ACTIVE" >Ativo</option>
+            <option value="STATUS_WAITING" class="taskStatus" status="STATUS_WAITING" >Suspenso</option>
+            <option value="STATUS_SUSPENDED" class="taskStatus" status="STATUS_SUSPENDED" >Cancelado</option>
+            <option value="STATUS_DONE" class="taskStatus" status="STATUS_DONE" >Completo</option>
+            <option value="STATUS_FAILED" class="taskStatus" status="STATUS_FAILED" >Falhou</option>
+            <option value="STATUS_UNDEFINED" class="taskStatus" status="STATUS_UNDEFINED" >Indefinido</option>
+          </select>
+        </td>
+        <td valign="top" nowrap>
+          <label>Progresso</label><br>
+          <input type="text" name="progress" id="progress" size="7" class="formElements validated percentile" autocomplete="off" maxlength="255" value="" oldvalue="1" entrytype="PERCENTILE">
+        </td>
+      </tr>
+	  <tr>
+		<td colspan="4">
+		  <label for="description">Descrição</label><br>
+		  <textarea rows="3" cols="30" id="description" name="description" class="formElements" style="width:100%"></textarea>
+		</td>
+	  </tr>
+	</table>
+
+    <h2>Atribuições</h2>
+	<table  cellspacing="1" cellpadding="0" width="100%" id="assigsTable">
+		<tr>
+		  <th style="width:100px;">Nome</th>
+		  <th style="width:70px;">Função</th>
+		  <th style="width:30px;">est.wklg.</th>  
+		  <th style="width:30px;" id="addAssig"><span class="teamworkIcon" style="cursor: pointer">+</span></th>
+		</tr>
+	</table>
+
+  <div style="text-align: right; padding-top: 20px">
+    <span id="saveButton" class="button first" onClick="$(this).trigger('saveFullEditor.gantt');">Salvar</span>
+  </div>
+
+  </div>
+</div>
+
+<div class="__template__" type="TASKSEDITHEAD">
+  <table class="gdfTable" cellspacing="0" cellpadding="0">
+    <thead>
+    <tr style="height:40px">
+      <th class="gdfColHeader" style="width:35px; border-right: none"></th>
+      <th class="gdfColHeader" style="width:25px;"></th>
+      <th class="gdfColHeader gdfResizable" style="width:100px;">Cód.</th>
+      <th class="gdfColHeader gdfResizable" style="width:300px;">Nome</th>
+      <!--<th class="gdfColHeader"  align="center" style="width:17px;" title="A data de início é um marco."><span class="teamworkIcon" style="font-size: 8px;">^</span></th>-->
+      <th class="gdfColHeader gdfResizable" style="width:80px;">Início</th>
+     <!-- <th class="gdfColHeader"  align="center" style="width:17px;" title="A data de término é um marco."><span class="teamworkIcon" style="font-size: 8px;">^</span></th>-->
+      <th class="gdfColHeader gdfResizable" style="width:80px;">Término</th>
+      <th class="gdfColHeader gdfResizable" style="width:50px;">Dias.</th>
+      <th class="gdfColHeader gdfResizable" style="width:20px;">%</th>
+      <th class="gdfColHeader gdfResizable requireCanSeeDep" style="width:50px;">depe.</th>
+      <th class="gdfColHeader gdfResizable" style="width:1000px; text-align: left; padding-left: 10px;">Recursos</th>
+    </tr>
+    </thead>
+  </table>
+</div>
+
+<div class="__template__" type="TASKROW">
+<!--
+  <tr id="tid_(#=obj.id#)" taskId="(#=obj.id#)" class="taskEditRow (#=obj.isParent()?'isParent':''#) (#=obj.collapsed?'collapsed':''#)" level="(#=level#)">
+    <th class="gdfCell edit" align="right" style="cursor:pointer;"><span class="taskRowIndex">(#=obj.getRow()+1#)</span> <span class="teamworkIcon" style="font-size:12px;" >e</span></th>
+    <td class="gdfCell noClip" align="center"><div class="taskStatus cvcColorSquare" status="(#=obj.status#)"></div></td>
+    <td class="gdfCell"><input type="text" name="code" value="(#=obj.code?obj.code:''#)" placeholder="code/short name"></td>
+    <td class="gdfCell indentCell" style="padding-left:(#=obj.level*10+18#)px;">
+      <div class="exp-controller" align="center"></div>
+      <input type="text" name="name" value="(#=obj.name#)" placeholder="name">
+    </td>
+    <td class="gdfCell"><input type="text" name="start"  value="" class="date"></td>
+    <td class="gdfCell"><input type="text" name="end" value="" class="date"></td>
+    <td class="gdfCell"><input type="text" name="duration" autocomplete="off" value="(#=obj.duration#)"></td>
+    <td class="gdfCell"><input type="text" name="progress" class="validated" entrytype="PERCENTILE" autocomplete="off" value="(#=obj.progress?obj.progress:''#)" (#=obj.progressByWorklog?"readOnly":""#)></td>
+    <td class="gdfCell requireCanSeeDep"><input type="text" name="depends" autocomplete="off" value="(#=obj.depends#)" (#=obj.hasExternalDep?"readonly":""#)></td>
+    <td class="gdfCell taskAssigs">(#=obj.getAssigsString()#)</td>
+  </tr>
+  -->
+</div>
+
+<div class="__template__" type="TASKEMPTYROW">
+<!--
+  <tr class="taskEditRow emptyRow" >
+    <th class="gdfCell" align="right"></th>
+    <td class="gdfCell noClip" align="center"></td>
+    <td class="gdfCell"></td>
+    <td class="gdfCell"></td>
+    <td class="gdfCell"></td>
+    <td class="gdfCell"></td>
+    <td class="gdfCell"></td>
+    <td class="gdfCell"></td>
+    <td class="gdfCell requireCanSeeDep"></td>
+    <td class="gdfCell"></td>
+  </tr>
+  -->
+</div>
+
+<div class="__template__" type="TASKBAR">
+<!--
+  <div class="taskBox taskBoxDiv" taskId="(#=obj.id#)" >
+    <div class="layout (#=obj.hasExternalDep?'extDep':''#)">
+      <div class="taskStatus" status="(#=obj.status#)"></div>
+      <div class="taskProgress" style="width:(#=obj.progress>100?100:obj.progress#)%; background-color:(#=obj.progress>100?'red':'rgb(153,255,51);'#);"></div>
+      <div class="milestone (#=obj.startIsMilestone?'active':''#)" ></div>
+      <div class="taskLabel"></div>
+      <div class="milestone end (#=obj.endIsMilestone?'active':''#)" ></div>
+    </div>
+  </div>
+  -->
+</div>
+
+<div class="__template__" type="CHANGE_STATUS">
+<!--
+    <div class="taskStatusBox">
+    <div class="taskStatus cvcColorSquare" status="STATUS_ACTIVE" title="Active"></div>
+    <div class="taskStatus cvcColorSquare" status="STATUS_DONE" title="Completed"></div>
+    <div class="taskStatus cvcColorSquare" status="STATUS_FAILED" title="Failed"></div>
+    <div class="taskStatus cvcColorSquare" status="STATUS_SUSPENDED" title="Suspended"></div>
+    <div class="taskStatus cvcColorSquare" status="STATUS_WAITING" title="Waiting" style="display: none;"></div>
+    <div class="taskStatus cvcColorSquare" status="STATUS_UNDEFINED" title="Undefined"></div>
+    </div>
+  -->
+</div>
+
+<div class="__template__" type="ASSIGNMENT_ROW">
+  <!--
+  <tr class="assigEditRow" taskId="(#=obj.task.id#)" assId="(#=obj.assig.id#)" >
+    <td ><select  class="formElements" name="resourceId" (#=obj.assig.id.indexOf("tmp_")==0?"":"disabled"#) ></select></td>
+    <td ><select class="formElements" type="select" name="roleId" ></select></td>
+    <td ><input type="text" name="effort" value="(#=getMillisInHoursMinutes(obj.assig.effort)#)" size="5" class="formElements"></td>
+	<td align="center"><span class="teamworkIcon delAssig del" style="cursor: pointer">d</span></td>
+  </tr> 
+  -->
+</div>
+
+<div class="__template__" type="RESOURCE_EDITOR">
+  <div class="resourceEditor" style="padding: 5px;">
+    <h2>Equipe do Projeto</h2>
+    <table  cellspacing="1" cellpadding="0" width="100%" id="resourcesTable">
+      <tr>
+        <th style="width:140px;">Nome</th>
+		<th style="width:60px;">Produtividade</th>
+        <th style="width:30px;" id="addResource"><span class="teamworkIcon" style="cursor: pointer">+</span></th>
+      </tr>
+    </table>
+    <div style="text-align: right; padding-top: 20px"><button id="resSaveButton" class="button big">Salvar</button></div>
+	<div>
+		A opção "Produtividade" simboliza o desempenho do recurso na execução das atividades, considerando sua capacidade e expertise.		
+	</div>
+  </div>
+</div>
+
+<div class="__template__" type="RESOURCE_ROW">
+<!--
+  <tr resId="(#=obj.id#)" class="resRow" >
+    <td ><input type="text" name="name" value="(#=obj.name#)" style="width:100%;" class="formElements"></td>
+	<td ><select type="select" name="performance" class="formElements" ></select></td>
+    <td align="center"><span class="teamworkIcon delRes del" style="cursor: pointer">d</span></td>
+  </tr> 
+  -->
+</div>
+
+<!--
+ utilizado para capturar o valor da performance em input numérico
+<td ><input type="number" name="performance" min="1" max="5" value="(#=obj.performance#)" style="width:100%;" class="formElements"></td>-->
+
+
+<!-- Relatório Resumo Execução -->
+<div class="__template__" type="RELATOR_VIEW">
+  <div class="viewRelator" style="padding: 5px;">
+    <h2>Resumo da execução</h2>
+	<h3 id="msgSimul" >Projeto finalizado no prazo...</h3>
+	<br>
+	<div class="tableFixHead" style="height: 350px;">
+		<table  cellspacing="1"  cellpadding="0" width="100%" id="resumeTable" >
+			<thead>
+			  <tr>
+				<th style="width:10px;">Cód.</th>
+				<th style="width:330px;">Atividade</th>
+				<th style="width:270px;" >Desempenho</th>				
+				<th style="width:15px;" align="center">Previsão</th>
+				<th style="width:100px;">Status</th>
+				<th style="width:20px;" align="center"><span class="teamworkIcon" >|</span></th>
+			  </tr>
+		  </thead>
+		</table>	
+	</div>
+	<br>
+	<div>
+		<ul style="list-style-type: none; margin: 0; padding: 0;">
+			<li style="float: left; margin-right:20px"><span class="teamworkIcon">;</span> Atvidade finalizada</li>
+			<li style="float: left; margin-right:20px"><span class="teamworkIcon">x</span> Atvidade iniciada, não finalizada</li>
+			<li style="float: left; margin-right:20px"><span class="teamworkIcon">C</span> Atvidade agendada, não iniciada</li>
+		</ul>
+	</div>
+    <div style="text-align: right; padding-top: 20px"><button id="relCloseButton" class="button big">Fechar</button></div>
+	<div>
+		Resumo mostra a execução realizada comparando com o planejado. 	
+	<br>
+	</div>
+  </div>
+</div>
+
+<div class="__template__" type="RELATOR_ROW">
+<!--
+  <tr resId="(#=obj.id#)" class="resRow"  style="tr:nth-child(even){background-color: #f2f2f2}">
+    <td style="width:10px;">(#=obj.idtask#)</td>
+	<td style="width:330px;">(#=obj.name#)(#=obj.interferencia&&obj.realStart>0?"<br><label style='color : black'><b>OCORRÊNCIA:</b> "+obj.interfMsg+"</label>":""#)</td>
+	<td style="width:270px;">(#=obj.desempenho#)</td>	
+	<td style="width:15px;" align="center">(#=obj.programmedDuration==1?"1 dia":(obj.programmedDuration)+ " dias"#) </td>
+	<td style="width:20px;">(#=obj.status#)</td>
+    <td align="center"><span class="teamworkIcon">(#=obj.finalizada?";":(obj.realStart>0?"x":"C")#)</span></td>
+  </tr> 
+  -->
+</div>
+
+<!-- Alerta de intervenção na Execução -->
+<div class="__template__" type="ALERT_VIEW">
+  <div class="viewAlertaModal" > <!-- style="padding: 0px; height: 100px"-->
+	<div class="apparent-message warning-message" > <!-- style="height: 100px; min-height: 100px; max-height:100px" -->
+	  <div class="message-container" style="padding: 0px">
+		<div class="apparent-message-icon">
+			<span style="text-color:#000000" >&#9888;</span>
+		</div>
+		<div class="content-container" style="padding: 10px">
+			<div class="message-header">
+				<span >Alerta de ocorrência</span>
+			</div>
+			<div id="msgOcorrencia" class="message-body">Message</div>
+			<!-- <div class="message-action">View</div> -->
+			<div  style="text-align: center; padding-top: 15px"><button id="seguirSimulButton" class="button big">Continuar Simulação</button></div>
+		</div>
+	  </div>
+	</div>
+	  
+  </div>
+</div>
+
+</div>
+
+<script type="text/javascript">
+  $.JST.loadDecorator("RESOURCE_ROW", function(resTr, res){
+    resTr.find(".delRes").click(function(){$(this).closest("tr").remove()});
+	// teste uso COMBO =====================================================
+	var expertises = [{"id":1, "descricao":"Muito Baixo", "fator":0.5},
+	                   {"id":2, "descricao":"Baixo", "fator":1.0},
+					   {"id":3, "descricao":"Normal", "fator":1.9},
+					   {"id":4, "descricao":"Alto", "fator":2.5},
+					   {"id":5, "descricao":"Muito Alto", "fator":4}];
+	var expertEl = resTr.find("select[name=performance]");
+    for(var i=0; i< expertises.length;i++){
+      var expertise = expertises[i];
+      var optr = $("<option>");
+      optr.val(expertise.fator).html(expertise.descricao);
+      if(res.performance == expertise.fator)
+        optr.attr("selected", "true");
+      expertEl.append(optr);
+    }				   
+	//=====================================================================	
+  });
+
+  $.JST.loadDecorator("ASSIGNMENT_ROW", function(assigTr, taskAssig){
+    var resEl = assigTr.find("[name=resourceId]");
+    var opt = $("<option>");
+    resEl.append(opt);
+    for(var i=0; i< taskAssig.task.master.resources.length;i++){
+      var res = taskAssig.task.master.resources[i];
+      opt = $("<option>");
+      opt.val(res.id).html(res.name);
+      if(taskAssig.assig.resourceId == res.id)
+        opt.attr("selected", "true");
+      resEl.append(opt);
+    }
+    var roleEl = assigTr.find("[name=roleId]");
+    for(var i=0; i< taskAssig.task.master.roles.length;i++){
+      var role = taskAssig.task.master.roles[i];
+      var optr = $("<option>");
+      optr.val(role.id).html(role.name);
+      if(taskAssig.assig.roleId == role.id)
+        optr.attr("selected", "true");
+      roleEl.append(optr);
+    }
+
+    if(taskAssig.task.master.permissions.canWrite && taskAssig.task.canWrite){
+      assigTr.find(".delAssig").click(function(){
+        var tr = $(this).closest("[assId]").fadeOut(200, function(){$(this).remove()});
+      });
+    }
+
+  });
+
+
+  function loadI18n(){
+    GanttMaster.messages = {
+      "CANNOT_WRITE":"Não há permissão para alterar a seguinte atvidade:",
+      "CHANGE_OUT_OF_SCOPE":"A atualização do projeto não é possível, pois você não possui direitos para atualizar um projeto pai.",
+      "START_IS_MILESTONE":"A data de início é um marco.",
+      "END_IS_MILESTONE":"A data de término é um marco.",
+      "TASK_HAS_CONSTRAINTS":"A atvidade possui restrições.",
+      "GANTT_ERROR_DEPENDS_ON_OPEN_TASK":"Erro: há uma dependência em uma atvidade aberta.",
+      "GANTT_ERROR_DESCENDANT_OF_CLOSED_TASK":"Erro: devido a um descendente de uma atvidade fechada.",
+      "TASK_HAS_EXTERNAL_DEPS":"Esta atvidade tem dependências externas.",
+      "GANNT_ERROR_LOADING_DATA_TASK_REMOVED":"GANNT_ERROR_LOADING_DATA_TASK_REMOVED",
+      "CIRCULAR_REFERENCE":"Referência circular.",
+      "CANNOT_DEPENDS_ON_ANCESTORS":"Não pode depender de antepassados.",
+      "INVALID_DATE_FORMAT":"Os dados inseridos são inválidos para o formato do campo.",
+      "GANTT_ERROR_LOADING_DATA_TASK_REMOVED":"Ocorreu um erro ao carregar os dados. Uma atvidade foi descartada.",
+      "CANNOT_CLOSE_TASK_IF_OPEN_ISSUE":"Não é possível fechar uma atvidade com problemas abertos",
+      "TASK_MOVE_INCONSISTENT_LEVEL":"Você não pode trocar atividades de diferentes profundidades.",
+      "CANNOT_MOVE_TASK":"CANNOT_MOVE_TASK",
+      "PLEASE_SAVE_PROJECT":"PLEASE_SAVE_PROJECT",
+      "GANTT_SEMESTER":"Semestre",
+      "GANTT_SEMESTER_SHORT":"s.",
+      "GANTT_QUARTER":"Quarter",
+      "GANTT_QUARTER_SHORT":"q.",
+      "GANTT_WEEK":"Semana",
+      "GANTT_WEEK_SHORT":"w."
+    };
+  }
+
+
+
+  function createNewResource(el) {
+    var row = el.closest("tr[taskid]");
+    var name = row.find("[name=resourceId_txt]").val();
+    var url = contextPath + "/applications/teamwork/resource/resourceNew.jsp?CM=ADD&name=" + encodeURI(name);
+
+    openBlackPopup(url, 700, 320, function (response) {
+      //fillare lo smart combo
+      if (response && response.resId && response.resName) {
+        //fillare lo smart combo e chiudere l'editor
+        row.find("[name=resourceId]").val(response.resId);
+        row.find("[name=resourceId_txt]").val(response.resName).focus().blur();
+      }
+
+    });
+  }
+</script>
+
+</body>
+</html>
