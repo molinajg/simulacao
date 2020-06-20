@@ -15,7 +15,7 @@ Simple html version at: https://github.com/molinajg/simulacao/releases/download/
 
 Installation tutorial available at: https://github.com/molinajg/simulacao/releases/download/Doc1.0.0/Instalacao_Simulador20200620.pdf
 
-Usage totorial available at: https://github.com/molinajg/simulacao/releases/download/Doc1.0.0/Utilizacao_Simulador20200613.pdf
+Usage tutorial available at: https://github.com/molinajg/simulacao/releases/download/Doc1.0.0/Utilizacao_Simulador20200613.pdf
 
 <img src="http://sistemaseinformacao.com.br/simulador/img/ExecProject1.JPG" alt="ExecProject" border="0" />
 
