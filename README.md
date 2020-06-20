@@ -9,13 +9,13 @@ ExecProject was developed by Gilberto Molina, using the jQuery Gantt component a
 
 Online evaluation available at: http://sistemaseinformacao.com.br/simulador/
 
-DotProject+ module version at: https://github.com/molinajg/simulacao/releases/download/untagged-e388f491c94be116624d/simulacao.zip
+DotProject+ module version at: https://github.com/molinajg/simulacao/releases/download/v1.0.1/simulacao.zip
 
-Simple html version at: https://github.com/molinajg/simulacao/releases/download/untagged-80f29b4d396fe52c9530/ExecProject.zip 
+Simple html version at: https://github.com/molinajg/simulacao/releases/download/v1.0.0/ExecProject.zip
 
-Installation tutorial available at: http://sistemaseinformacao.com.br/simulador/simulador20200613.pdf
+Installation tutorial available at: https://github.com/molinajg/simulacao/releases/download/Doc1.0.0/Instalacao_Simulador20200620.pdf
 
-Usage totorial available at: http://sistemaseinformacao.com.br/simulador/simulador20200613.pdf
+Usage totorial available at: https://github.com/molinajg/simulacao/releases/download/Doc1.0.0/Utilizacao_Simulador20200613.pdf
 
 <img src="http://sistemaseinformacao.com.br/simulador/img/ExecProject1.JPG" alt="ExecProject" border="0" />
 
