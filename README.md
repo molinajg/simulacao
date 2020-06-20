@@ -1,7 +1,8 @@
 ExecProject - Project execution simulator
 ===========
-ExecProject was developed by Gilberto Molina, using jQuery Gantt as a base or component.
-ExecProject was able to demonstrate the project execution product group according to PMBOK.
+This project has an educational objective.
+ExecProject performs the simulation of the project execution process group according to the PMBOK.
+ExecProject was developed by Gilberto Molina, using the jQuery Gantt component as a base.
 
 * Allows you to import projects in JSON format
 * Can be installed on dotProject +
